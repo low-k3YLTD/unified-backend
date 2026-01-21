@@ -1,0 +1,41 @@
+graph TD
+    subgraph "Monorepo Hub"
+        subgraph "Apps"
+            Ingest[Ingest Service]
+            Predict[Predict Engine]
+            Analytics[Analytics Export]
+        end
+        
+        subgraph "Packages"
+            Security[Security/Auth]
+            MLCore[ML Core]
+            Shared[Shared Utils]
+        end
+    end
+
+    CSV[(CSV Files)] --> Ingest
+    API[External APIs] --> Ingest
+    Ingest --> Predict
+    Predict --> Analytics
+    Analytics --> Export[(Analytics Export)]
+
+    Security -.-> Ingest
+    Security -.-> Predict
+    Security -.-> Analytics
+    
+    MLCore --> Predict
+    Shared --> Ingest
+    Shared --> Predict
+    Shared --> Analytics
+
+    subgraph "Hawke's Bay Integration"
+        HB_Bias[Local Track Bias Features]
+        HB_Bias --> MLCore
+    end
+
+    subgraph "CI/CD Pipeline"
+        GHA[GitHub Actions]
+        GHA --> Test[Vitest Suite]
+        Test --> Build[Docker Build]
+        Build --> Deploy[Blue-Green Deploy]
+    end
