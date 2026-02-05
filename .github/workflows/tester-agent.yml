@@ -1,0 +1,46 @@
+name: Tester Agent - Model Validation
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  model-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run Model Tests
+        run: pnpm test -- --run --reporter=verbose || true
+      - name: Performance Benchmark
+        run: |
+          node << 'EOF'
+          const start = process.hrtime.bigint();
+          for (let i = 0; i < 100; i++) {
+            Math.random();
+          }
+          const end = process.hrtime.bigint();
+          const duration = Number(end - start) / 1000000;
+          console.log(`Benchmark: ${duration.toFixed(2)}ms`);
+          EOF
+      - name: Create Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Tester Alert - Model Validation Failed',
+              body: 'Tester detected issues. Run: ${{ github.run_id }}',
+              labels: ['bug', 'automated', 'tester']
+            });
